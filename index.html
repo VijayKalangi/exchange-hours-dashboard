@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exchange Hours Dashboard</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0f1118;
+  color: #e0e0e0;
+  min-height: 100vh;
+  padding: 20px;
+}
+h1 {
+  text-align: center;
+  margin-bottom: 8px;
+  font-size: 1.6rem;
+  color: #fff;
+}
+.subtitle {
+  text-align: center;
+  color: #888;
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.card {
+  background: #1a1d2e;
+  border-radius: 12px;
+  padding: 20px;
+  border: 2px solid #2a2d3e;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.card.open-relaxed { border-color: #22c55e; }
+.card.open-warning { border-color: #f59e0b; box-shadow: 0 0 12px #f59e0b33; }
+.card.open-urgent { border-color: #ef4444; box-shadow: 0 0 16px #ef444444; animation: pulse 1.5s infinite; }
+.card.closed { border-color: #6b7280; }
+.card.opening-soon { border-color: #3b82f6; box-shadow: 0 0 12px #3b82f633; }
+.card.holiday { border-color: #8b5cf6; }
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 16px #ef444444; }
+  50% { box-shadow: 0 0 24px #ef444488; }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.exchange-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.exchange-country {
+  font-size: 0.8rem;
+  color: #888;
+}
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.badge-open { background: #16a34a33; color: #22c55e; }
+.badge-warning { background: #f59e0b33; color: #f59e0b; }
+.badge-urgent { background: #ef444433; color: #ef4444; }
+.badge-closed { background: #6b728033; color: #9ca3af; }
+.badge-opening-soon { background: #3b82f633; color: #60a5fa; }
+.badge-holiday { background: #8b5cf633; color: #a78bfa; }
+.times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #aaa;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #2a2d3e;
+}
+.countdown-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.countdown-label {
+  font-size: 0.78rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.countdown-timer {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+}
+.timer-green { color: #22c55e; }
+.timer-yellow { color: #f59e0b; }
+.timer-red { color: #ef4444; }
+.timer-blue { color: #60a5fa; }
+.timer-gray { color: #9ca3af; }
+.timer-purple { color: #a78bfa; }
+.local-time {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 8px;
+}
+.extra-info {
+  font-size: 0.8rem;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* Overlap section */
+.overlap-section {
+  max-width: 1200px;
+  margin: 0 auto 24px;
+  background: linear-gradient(135deg, #1a1d2e 0%, #1e2235 100%);
+  border-radius: 16px;
+  padding: 28px;
+  border: 1px solid #2a2d3e;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+.overlap-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+.overlap-grid {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 6px 16px;
+  align-items: center;
+}
+.overlap-exchange-label {
+  font-size: 0.78rem;
+  color: #ccc;
+  text-align: right;
+  font-weight: 500;
+}
+.overlap-bar-container {
+  position: relative;
+  height: 28px;
+  background: #0d0f16;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #1f2233;
+}
+.overlap-bar {
+  position: absolute;
+  height: 100%;
+  border-radius: 5px;
+  opacity: 0.85;
+  box-shadow: 0 0 8px rgba(255,255,255,0.05);
+  transition: opacity 0.3s;
+}
+.overlap-bar-container:hover .overlap-bar {
+  opacity: 1;
+}
+.overlap-now-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, #ef4444 50%, transparent 50%);
+  background-size: 1px 6px;
+  opacity: 0.6;
+  z-index: 10;
+  pointer-events: none;
+}
+.time-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: #555;
+  margin-top: 10px;
+  grid-column: 2;
+  padding: 0 2px;
+}
+.overlap-highlight {
+  margin-top: 20px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #22c55e08 0%, #22c55e15 100%);
+  border: 1px solid #22c55e33;
+  border-radius: 10px;
+}
+.overlap-highlight h3 {
+  font-size: 0.9rem;
+  color: #22c55e;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.overlap-highlight p {
+  font-size: 0.85rem;
+  color: #ccc;
+  line-height: 1.6;
+}
+.overlap-highlight .peak {
+  font-weight: 700;
+  color: #22c55e;
+}
+
+/* Traffic light strip */
+.traffic-strip {
+  max-width: 1200px;
+  margin: 0 auto 20px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.traffic-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1a1d2e;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #2a2d3e;
+}
+.traffic-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+.traffic-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+/* Heat band */
+.heat-band {
+  height: 18px;
+  border-radius: 6px;
+  display: flex;
+  overflow: hidden;
+  border: 1px solid #1f2233;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+.heat-segment {
+  height: 100%;
+  transition: background 0.3s;
+}
+
+/* Next-up queue */
+.next-up-section {
+  max-width: 1200px;
+  margin: 0 auto 20px;
+  background: #1a1d2e;
+  border-radius: 12px;
+  padding: 16px 20px;
+  border: 1px solid #2a2d3e;
+}
+.next-up-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 10px;
+}
+.next-up-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.next-up-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+.next-up-arrow {
+  color: #666;
+}
+.next-up-event {
+  color: #ccc;
+}
+.next-up-time {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Legend */
+.urgency-legend {
+  max-width: 1200px;
+  margin: 16px auto 0;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: #888;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  body { padding: 12px; }
+  h1 { font-size: 1.3rem; }
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .card { padding: 16px; }
+  .traffic-strip {
+    gap: 8px;
+    justify-content: center;
+  }
+  .traffic-item {
+    padding: 6px 10px;
+  }
+  .traffic-name { font-size: 0.75rem; }
+  .traffic-dot { width: 12px; height: 12px; }
+  .overlap-section {
+    padding: 16px;
+    border-radius: 12px;
+  }
+  .overlap-title { font-size: 0.95rem; margin-bottom: 14px; }
+  .overlap-grid {
+    grid-template-columns: 55px 1fr;
+    gap: 4px 8px;
+  }
+  .overlap-exchange-label { font-size: 0.65rem; }
+  .overlap-bar-container { height: 22px; }
+  .heat-band { height: 14px; }
+  .time-labels { font-size: 0.6rem; }
+  .next-up-section { padding: 12px 14px; }
+  .next-up-item { font-size: 0.8rem; gap: 8px; }
+  .urgency-legend {
+    gap: 10px;
+    font-size: 0.68rem;
+    justify-content: center;
+  }
+  .countdown-timer { font-size: 1.3rem; }
+  .overlap-highlight { padding: 10px 12px; }
+  .overlap-highlight h3 { font-size: 0.8rem; }
+  .overlap-highlight p { font-size: 0.78rem; }
+}
+
+@media (max-width: 400px) {
+  body { padding: 8px; }
+  h1 { font-size: 1.1rem; }
+  .subtitle { font-size: 0.78rem; }
+  .traffic-strip { gap: 6px; }
+  .traffic-item { padding: 5px 8px; }
+  .traffic-name { font-size: 0.7rem; }
+  .overlap-grid {
+    grid-template-columns: 45px 1fr;
+    gap: 3px 6px;
+  }
+  .overlap-exchange-label { font-size: 0.6rem; }
+  .overlap-bar-container { height: 18px; }
+  .card { padding: 14px; }
+  .exchange-name { font-size: 1rem; }
+  .times { font-size: 0.78rem; }
+}
+</style>
+</head>
+<body>
+<h1>Exchange Hours Dashboard</h1>
+<div class="subtitle" id="clock"></div>
+<div class="subtitle" id="tz-info" style="font-size:0.8rem;color:#666;margin-top:-16px;margin-bottom:16px;"></div>
+<div class="traffic-strip" id="traffic-strip"></div>
+<div class="overlap-section">
+  <div class="overlap-title">Daily Trading Timeline (Your Local Time) &mdash; Overlap Analysis</div>
+  <div id="overlap-content"></div>
+</div>
+<div class="urgency-legend" style="margin-bottom:24px;">
+  <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> Open (>1hr left)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> Closing soon (<1hr)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Closing very soon (<15min)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Opening soon (<1hr)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#6b7280"></div> Closed</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6"></div> Holiday</div>
+</div>
+<div class="next-up-section" id="next-up"></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const exchanges = [
+  {
+    name: "NSE / BSE",
+    short: "India",
+    country: "India",
+    timezone: "Asia/Kolkata",
+    open: { h: 9, m: 15 },
+    close: { h: 15, m: 30 },
+    color: "#22c55e",
+    holidays: {
+      "2025-01-26": "Republic Day",
+      "2025-02-26": "Maha Shivaratri",
+      "2025-03-14": "Holi",
+      "2025-03-31": "Id-Ul-Fitr",
+      "2025-04-10": "Shri Ram Navami",
+      "2025-04-14": "Dr. Ambedkar Jayanti",
+      "2025-04-18": "Good Friday",
+      "2025-05-01": "Maharashtra Day",
+      "2025-08-15": "Independence Day",
+      "2025-08-27": "Ganesh Chaturthi",
+      "2025-10-02": "Mahatma Gandhi Jayanti",
+      "2025-10-21": "Diwali Laxmi Pujan",
+      "2025-10-22": "Diwali Balipratipada",
+      "2025-11-05": "Guru Nanak Jayanti",
+      "2025-12-25": "Christmas",
+      "2026-01-26": "Republic Day",
+      "2026-03-03": "Maha Shivaratri",
+      "2026-03-04": "Holi",
+      "2026-03-20": "Id-Ul-Fitr",
+      "2026-04-02": "Shri Ram Navami",
+      "2026-04-03": "Good Friday",
+      "2026-04-14": "Dr. Ambedkar Jayanti",
+      "2026-05-01": "Maharashtra Day",
+      "2026-05-27": "Id-Ul-Adha (Bakri Id)",
+      "2026-08-15": "Independence Day",
+      "2026-08-17": "Ganesh Chaturthi",
+      "2026-10-02": "Mahatma Gandhi Jayanti",
+      "2026-10-09": "Dussehra",
+      "2026-10-29": "Diwali Laxmi Pujan",
+      "2026-11-25": "Guru Nanak Jayanti",
+      "2026-12-25": "Christmas"
+    }
+  },
+  {
+    name: "NYSE / NASDAQ",
+    short: "NYSE",
+    country: "United States",
+    timezone: "America/New_York",
+    open: { h: 9, m: 30 },
+    close: { h: 16, m: 0 },
+    color: "#3b82f6",
+    holidays: {
+      "2025-01-01": "New Year's Day",
+      "2025-01-09": "National Day of Mourning",
+      "2025-01-20": "MLK Jr. Day",
+      "2025-02-17": "Presidents' Day",
+      "2025-04-18": "Good Friday",
+      "2025-05-26": "Memorial Day",
+      "2025-06-19": "Juneteenth",
+      "2025-07-04": "Independence Day",
+      "2025-09-01": "Labor Day",
+      "2025-11-27": "Thanksgiving",
+      "2025-12-25": "Christmas",
+      "2026-01-01": "New Year's Day",
+      "2026-01-19": "MLK Jr. Day",
+      "2026-02-16": "Presidents' Day",
+      "2026-04-03": "Good Friday",
+      "2026-05-25": "Memorial Day",
+      "2026-06-19": "Juneteenth",
+      "2026-07-03": "Independence Day (Observed)",
+      "2026-09-07": "Labor Day",
+      "2026-11-26": "Thanksgiving",
+      "2026-12-25": "Christmas"
+    }
+  },
+  {
+    name: "LSE",
+    short: "LSE",
+    country: "United Kingdom",
+    timezone: "Europe/London",
+    open: { h: 8, m: 0 },
+    close: { h: 16, m: 30 },
+    color: "#f97316",
+    holidays: {
+      "2025-01-01": "New Year's Day",
+      "2025-04-18": "Good Friday",
+      "2025-04-21": "Easter Monday",
+      "2025-05-05": "Early May Bank Holiday",
+      "2025-05-26": "Spring Bank Holiday",
+      "2025-08-25": "Summer Bank Holiday",
+      "2025-12-25": "Christmas",
+      "2025-12-26": "Boxing Day",
+      "2026-01-01": "New Year's Day",
+      "2026-04-03": "Good Friday",
+      "2026-04-06": "Easter Monday",
+      "2026-05-04": "Early May Bank Holiday",
+      "2026-05-25": "Spring Bank Holiday",
+      "2026-08-31": "Summer Bank Holiday",
+      "2026-12-25": "Christmas",
+      "2026-12-28": "Boxing Day (Observed)"
+    }
+  },
+  {
+    name: "Nasdaq Stockholm",
+    short: "Sweden",
+    country: "Sweden",
+    timezone: "Europe/Stockholm",
+    open: { h: 9, m: 0 },
+    close: { h: 17, m: 30 },
+    color: "#eab308",
+    holidays: {
+      "2025-01-01": "New Year's Day",
+      "2025-01-06": "Epiphany",
+      "2025-04-18": "Good Friday",
+      "2025-04-21": "Easter Monday",
+      "2025-05-01": "May Day",
+      "2025-05-29": "Ascension Day",
+      "2025-06-06": "National Day",
+      "2025-06-20": "Midsummer Eve",
+      "2025-12-24": "Christmas Eve",
+      "2025-12-25": "Christmas",
+      "2025-12-26": "Boxing Day",
+      "2025-12-31": "New Year's Eve",
+      "2026-01-01": "New Year's Day",
+      "2026-01-06": "Epiphany",
+      "2026-04-03": "Good Friday",
+      "2026-04-06": "Easter Monday",
+      "2026-05-01": "May Day",
+      "2026-05-14": "Ascension Day",
+      "2026-06-06": "National Day",
+      "2026-06-19": "Midsummer Eve",
+      "2026-12-24": "Christmas Eve",
+      "2026-12-25": "Christmas",
+      "2026-12-31": "New Year's Eve"
+    }
+  },
+  {
+    name: "KRX",
+    short: "KRX",
+    country: "South Korea",
+    timezone: "Asia/Seoul",
+    open: { h: 9, m: 0 },
+    close: { h: 15, m: 30 },
+    color: "#ec4899",
+    holidays: {
+      "2025-01-01": "New Year's Day",
+      "2025-01-28": "Lunar New Year",
+      "2025-01-29": "Lunar New Year",
+      "2025-01-30": "Lunar New Year",
+      "2025-03-01": "Independence Movement Day",
+      "2025-05-05": "Children's Day",
+      "2025-05-06": "Buddha's Birthday (Observed)",
+      "2025-06-06": "Memorial Day",
+      "2025-08-15": "Liberation Day",
+      "2025-10-03": "National Foundation Day",
+      "2025-10-05": "Chuseok",
+      "2025-10-06": "Chuseok",
+      "2025-10-07": "Chuseok",
+      "2025-10-08": "Chuseok (Substitute)",
+      "2025-10-09": "Hangul Day",
+      "2025-12-25": "Christmas",
+      "2026-01-01": "New Year's Day",
+      "2026-02-16": "Lunar New Year",
+      "2026-02-17": "Lunar New Year",
+      "2026-02-18": "Lunar New Year",
+      "2026-03-02": "Independence Movement Day (Observed)",
+      "2026-05-05": "Children's Day",
+      "2026-05-24": "Buddha's Birthday",
+      "2026-06-06": "Memorial Day",
+      "2026-08-15": "Liberation Day",
+      "2026-09-24": "Chuseok",
+      "2026-09-25": "Chuseok",
+      "2026-09-26": "Chuseok",
+      "2026-10-03": "National Foundation Day",
+      "2026-10-09": "Hangul Day",
+      "2026-12-25": "Christmas"
+    }
+  },
+  {
+    name: "TWSE",
+    short: "TWSE",
+    country: "Taiwan",
+    timezone: "Asia/Taipei",
+    open: { h: 9, m: 0 },
+    close: { h: 13, m: 30 },
+    color: "#a78bfa",
+    holidays: {
+      "2025-01-01": "New Year's Day",
+      "2025-01-27": "Lunar New Year",
+      "2025-01-28": "Lunar New Year",
+      "2025-01-29": "Lunar New Year",
+      "2025-01-30": "Lunar New Year",
+      "2025-01-31": "Lunar New Year",
+      "2025-02-28": "Peace Memorial Day",
+      "2025-04-03": "Children's Day",
+      "2025-04-04": "Tomb Sweeping Day",
+      "2025-05-01": "Labor Day",
+      "2025-05-30": "Dragon Boat Festival",
+      "2025-10-06": "Mid-Autumn Festival",
+      "2025-10-10": "National Day",
+      "2026-01-01": "New Year's Day",
+      "2026-02-16": "Lunar New Year",
+      "2026-02-17": "Lunar New Year",
+      "2026-02-18": "Lunar New Year",
+      "2026-02-19": "Lunar New Year",
+      "2026-02-20": "Lunar New Year",
+      "2026-02-28": "Peace Memorial Day",
+      "2026-04-03": "Children's Day",
+      "2026-04-05": "Tomb Sweeping Day (Observed)",
+      "2026-05-01": "Labor Day",
+      "2026-06-19": "Dragon Boat Festival",
+      "2026-09-25": "Mid-Autumn Festival",
+      "2026-10-10": "National Day"
+    }
+  },
+  {
+    name: "DFM",
+    short: "Dubai",
+    country: "UAE",
+    timezone: "Asia/Dubai",
+    open: { h: 10, m: 0 },
+    close: { h: 14, m: 0 },
+    color: "#06b6d4",
+    weekendDays: [5, 6],
+    holidays: {
+      "2025-01-01": "New Year's Day",
+      "2025-03-30": "Eid Al Fitr",
+      "2025-03-31": "Eid Al Fitr",
+      "2025-04-01": "Eid Al Fitr",
+      "2025-06-06": "Eid Al Adha",
+      "2025-06-07": "Eid Al Adha",
+      "2025-06-08": "Eid Al Adha",
+      "2025-06-09": "Eid Al Adha",
+      "2025-06-26": "Islamic New Year",
+      "2025-09-04": "Prophet's Birthday",
+      "2025-11-30": "Commemoration Day",
+      "2025-12-01": "UAE National Day",
+      "2025-12-02": "UAE National Day",
+      "2025-12-03": "UAE National Day",
+      "2026-01-01": "New Year's Day",
+      "2026-03-20": "Eid Al Fitr",
+      "2026-03-21": "Eid Al Fitr",
+      "2026-03-22": "Eid Al Fitr",
+      "2026-05-27": "Eid Al Adha",
+      "2026-05-28": "Eid Al Adha",
+      "2026-05-29": "Eid Al Adha",
+      "2026-05-30": "Eid Al Adha",
+      "2026-06-16": "Islamic New Year",
+      "2026-08-25": "Prophet's Birthday",
+      "2026-11-30": "Commemoration Day",
+      "2026-12-01": "UAE National Day",
+      "2026-12-02": "UAE National Day",
+      "2026-12-03": "UAE National Day"
+    }
+  }
+];
+
+// Auto-detect user's current timezone
+const USER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const USER_TZ_SHORT = USER_TZ.split('/').pop().replace(/_/g, ' ');
+
+function getExchangeDate(timezone) {
+  return new Date(new Date().toLocaleString("en-US", { timeZone: timezone }));
+}
+
+function formatDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function isWeekend(date, weekendDays) {
+  const day = date.getDay();
+  if (weekendDays) return weekendDays.includes(day);
+  return day === 0 || day === 6;
+}
+
+function getStatus(exchange) {
+  const now = getExchangeDate(exchange.timezone);
+  const dateStr = formatDate(now);
+
+  if (exchange.holidays[dateStr]) {
+    return { status: "holiday", holiday: exchange.holidays[dateStr] };
+  }
+  if (isWeekend(now, exchange.weekendDays)) {
+    return { status: "closed", reason: "Weekend" };
+  }
+
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const openMinutes = exchange.open.h * 60 + exchange.open.m;
+  const closeMinutes = exchange.close.h * 60 + exchange.close.m;
+
+  if (nowMinutes >= openMinutes && nowMinutes < closeMinutes) {
+    return { status: "open" };
+  }
+  return { status: "closed", reason: nowMinutes < openMinutes ? "Pre-market" : "After hours" };
+}
+
+function getNextEvent(exchange) {
+  const localNow = getExchangeDate(exchange.timezone);
+  const nowMinutes = localNow.getHours() * 60 + localNow.getMinutes();
+  const openMinutes = exchange.open.h * 60 + exchange.open.m;
+  const closeMinutes = exchange.close.h * 60 + exchange.close.m;
+  const dateStr = formatDate(localNow);
+  const isHoliday = !!exchange.holidays[dateStr];
+  const weekend = isWeekend(localNow, exchange.weekendDays);
+
+  if (!isHoliday && !weekend && nowMinutes >= openMinutes && nowMinutes < closeMinutes) {
+    const diffMs = (closeMinutes - nowMinutes) * 60 * 1000;
+    const secsElapsed = localNow.getSeconds();
+    return { event: "closes", ms: diffMs - secsElapsed * 1000 };
+  }
+
+  let checkDate = new Date(localNow);
+
+  if (!isHoliday && !weekend && nowMinutes < openMinutes) {
+    const diffMs = (openMinutes - nowMinutes) * 60 * 1000;
+    const secsElapsed = localNow.getSeconds();
+    return { event: "opens", ms: diffMs - secsElapsed * 1000 };
+  }
+
+  checkDate.setDate(checkDate.getDate() + 1);
+  for (let i = 0; i < 30; i++) {
+    const ds = formatDate(checkDate);
+    if (!isWeekend(checkDate, exchange.weekendDays) && !exchange.holidays[ds]) {
+      const openTarget = new Date(localNow);
+      openTarget.setDate(localNow.getDate() + (Math.round((checkDate.getTime() - new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate()).getTime()) / (1000*60*60*24))));
+      openTarget.setHours(exchange.open.h, exchange.open.m, 0, 0);
+      return { event: "opens", ms: openTarget - localNow };
+    }
+    checkDate.setDate(checkDate.getDate() + 1);
+  }
+  return { event: "opens", ms: 0 };
+}
+
+function getUrgency(statusInfo, nextEvent) {
+  const ms = nextEvent.ms;
+  const mins = ms / 60000;
+
+  if (statusInfo.status === 'holiday') {
+    return { cardClass: 'holiday', badgeClass: 'badge-holiday', badgeText: 'HOLIDAY', timerClass: 'timer-purple' };
+  }
+
+  if (statusInfo.status === 'open') {
+    if (mins <= 15) {
+      return { cardClass: 'open-urgent', badgeClass: 'badge-urgent', badgeText: 'CLOSING NOW!', timerClass: 'timer-red' };
+    } else if (mins <= 60) {
+      return { cardClass: 'open-warning', badgeClass: 'badge-warning', badgeText: 'CLOSING SOON', timerClass: 'timer-yellow' };
+    } else {
+      return { cardClass: 'open-relaxed', badgeClass: 'badge-open', badgeText: 'OPEN', timerClass: 'timer-green' };
+    }
+  }
+
+  // Closed
+  if (nextEvent.event === 'opens' && mins <= 60) {
+    return { cardClass: 'opening-soon', badgeClass: 'badge-opening-soon', badgeText: 'OPENING SOON', timerClass: 'timer-blue' };
+  }
+  return { cardClass: 'closed', badgeClass: 'badge-closed', badgeText: 'CLOSED', timerClass: 'timer-gray' };
+}
+
+function formatCountdown(ms) {
+  if (ms <= 0) return "00:00:00";
+  const totalSecs = Math.floor(ms / 1000);
+  const days = Math.floor(totalSecs / 86400);
+  const hrs = Math.floor((totalSecs % 86400) / 3600);
+  const mins = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+
+  const hStr = String(hrs).padStart(2, '0');
+  const mStr = String(mins).padStart(2, '0');
+  const sStr = String(secs).padStart(2, '0');
+
+  if (days > 0) return `${days}d ${hStr}:${mStr}:${sStr}`;
+  return `${hStr}:${mStr}:${sStr}`;
+}
+
+function formatTime(h, m) {
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+// Convert exchange local time to user's local timezone minutes (0-1440+)
+function toLocalMinutes(exchange) {
+  const now = new Date();
+  const exchangeTime = new Date(now.toLocaleString("en-US", { timeZone: exchange.timezone }));
+  const localTime = new Date(now.toLocaleString("en-US", { timeZone: USER_TZ }));
+  const diffMinutes = Math.round((localTime - exchangeTime) / 60000);
+
+  const openLocal = exchange.open.h * 60 + exchange.open.m + diffMinutes;
+  const closeLocal = exchange.close.h * 60 + exchange.close.m + diffMinutes;
+  return { openLocal, closeLocal };
+}
+
+function renderOverlap() {
+  const container = document.getElementById('overlap-content');
+
+  // Calculate local times for each exchange
+  const localTimes = exchanges.map(ex => {
+    const { openLocal, closeLocal } = toLocalMinutes(ex);
+    return { name: ex.short, openLocal, closeLocal, color: ex.color };
+  });
+
+  // Determine timeline range dynamically based on earliest open and latest close
+  let earliest = 1440, latest = 0;
+  localTimes.forEach(ex => {
+    let open = ex.openLocal;
+    let close = ex.closeLocal;
+    if (close < open) close += 1440;
+    if (open < 0) { open += 1440; close += 1440; }
+    if (open < earliest) earliest = open;
+    if (close > latest) latest = close;
+  });
+  // Add 1hr padding on each side, snap to nearest hour
+  const timelineStart = Math.max(0, Math.floor((earliest - 60) / 60) * 60);
+  const timelineEnd = Math.min(1680, Math.ceil((latest + 60) / 60) * 60);
+  const timelineWidth = timelineEnd - timelineStart;
+
+  // Current time position
+  const localNowEarly = getExchangeDate(USER_TZ);
+  let nowMins = localNowEarly.getHours() * 60 + localNowEarly.getMinutes();
+  if (nowMins < timelineStart) nowMins += 1440;
+  const nowPctVal = ((nowMins - timelineStart) / timelineWidth) * 100;
+
+  // Build timeline bars with urgency coloring
+  let barsHTML = '';
+  localTimes.forEach((ex, idx) => {
+    let open = ex.openLocal;
+    let close = ex.closeLocal;
+    if (close < open) close += 1440;
+    if (open < timelineStart && close < timelineStart) {
+      open += 1440;
+      close += 1440;
+    }
+
+    const leftPct = ((open - timelineStart) / timelineWidth) * 100;
+    const widthPct = ((close - open) / timelineWidth) * 100;
+    const showNowLine = nowPctVal >= 0 && nowPctVal <= 100;
+
+    // Determine bar color based on urgency (same logic as cards)
+    const exchange = exchanges[idx];
+    const statusInfo = getStatus(exchange);
+    const nextEvent = getNextEvent(exchange);
+    let barColor = '#6b7280'; // default gray (closed)
+
+    if (statusInfo.status === 'holiday') {
+      barColor = '#8b5cf6';
+    } else if (statusInfo.status === 'open') {
+      const mins = nextEvent.ms / 60000;
+      if (mins <= 15) barColor = '#ef4444';       // urgent red
+      else if (mins <= 60) barColor = '#f59e0b';  // warning amber
+      else barColor = '#22c55e';                   // relaxed green
+    } else {
+      // closed — check if opening soon
+      if (nextEvent.event === 'opens' && nextEvent.ms / 60000 <= 60) {
+        barColor = '#3b82f6'; // opening soon blue
+      } else {
+        barColor = '#6b7280'; // closed gray
+      }
+    }
+
+    barsHTML += `
+      <div class="overlap-exchange-label">${ex.name}</div>
+      <div class="overlap-bar-container">
+        <div class="overlap-bar" style="left:${Math.max(0, leftPct)}%;width:${Math.min(100 - Math.max(0, leftPct), widthPct)}%;background:${barColor}"></div>
+        ${showNowLine ? `<div class="overlap-now-line" style="left:${nowPctVal}%"></div>` : ''}
+      </div>
+    `;
+  });
+
+  // Generate time labels dynamically
+  const labelCount = 11;
+  const labelStep = timelineWidth / (labelCount - 1);
+  const labels = [];
+  for (let i = 0; i < labelCount; i++) {
+    const mins = Math.round(timelineStart + i * labelStep);
+    const h = Math.floor(((mins % 1440) + 1440) % 1440 / 60);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+    labels.push(`${h12}${ampm}`);
+  }
+
+  const nowPct = nowPctVal;
+
+  // Calculate overlaps — count how many exchanges are open each 15 min slot
+  const slots = [];
+  for (let t = 0; t < 1440; t += 15) {
+    let count = 0;
+    let names = [];
+    localTimes.forEach(ex => {
+      let open = ex.openLocal;
+      let close = ex.closeLocal;
+      if (close < open) close += 1440;
+      let checkT = t;
+      if (checkT >= open && checkT < close) { count++; names.push(ex.name); }
+      if ((checkT + 1440) >= open && (checkT + 1440) < close) { count++; names.push(ex.name); }
+    });
+    slots.push({ t, count, names });
+  }
+
+  // Find max overlap
+  let maxOverlap = 0;
+  slots.forEach(s => { if (s.count > maxOverlap) maxOverlap = s.count; });
+
+  // Find continuous ranges of max overlap
+  let ranges = [];
+  let rangeStart = null;
+  let rangeNames = null;
+  for (let i = 0; i < slots.length; i++) {
+    if (slots[i].count === maxOverlap) {
+      if (rangeStart === null) {
+        rangeStart = slots[i].t;
+        rangeNames = slots[i].names;
+      }
+    } else {
+      if (rangeStart !== null) {
+        ranges.push({ start: rangeStart, end: slots[i].t, names: rangeNames });
+        rangeStart = null;
+      }
+    }
+  }
+  if (rangeStart !== null) {
+    ranges.push({ start: rangeStart, end: slots[slots.length - 1].t + 15, names: rangeNames });
+  }
+
+  function minsToTimeStr(m) {
+    const h = Math.floor(((m % 1440) + 1440) % 1440 / 60);
+    const min = ((m % 1440) + 1440) % 1440 % 60;
+    return formatTime(h, min);
+  }
+
+  let overlapInfo = '';
+  if (ranges.length > 0) {
+    overlapInfo = `<div class="overlap-highlight">
+      <h3>Maximum Overlap: ${maxOverlap} exchanges simultaneously</h3>
+      <p>`;
+    ranges.forEach(r => {
+      overlapInfo += `<span class="peak">${minsToTimeStr(r.start)} – ${minsToTimeStr(r.end)} (your local time)</span>: ${r.names.join(', ')}<br>`;
+    });
+    overlapInfo += `</p></div>`;
+  }
+
+  // Build heat band — brightness-based (white intensity = more exchanges open)
+  let heatHTML = '';
+  const slotWidth = 100 / ((timelineEnd - timelineStart) / 15);
+  for (let t = timelineStart; t < timelineEnd; t += 15) {
+    const normT = ((t % 1440) + 1440) % 1440;
+    const slot = slots.find(s => s.t === normT);
+    const count = slot ? slot.count : 0;
+    // 0 = dark, max = cyan/teal
+    const intensity = maxOverlap > 0 ? count / maxOverlap : 0;
+    const r = Math.round(34 * intensity);
+    const g = Math.round(211 * intensity);
+    const b = Math.round(238 * intensity);
+    const color = count === 0 ? '#0d0f16' : `rgb(${r}, ${g}, ${b})`;
+    heatHTML += `<div class="heat-segment" style="width:${slotWidth}%;background:${color}" title="${count} exchange${count !== 1 ? 's' : ''} open"></div>`;
+  }
+
+  container.innerHTML = `
+    <div class="overlap-grid">
+      ${barsHTML}
+      <div></div>
+      <div style="position:relative;">
+        <div class="time-labels">
+          ${labels.map(l => `<span>${l}</span>`).join('')}
+        </div>
+      </div>
+      <div class="overlap-exchange-label" style="font-size:0.7rem;color:#555;">Density</div>
+      <div class="heat-band">${heatHTML}</div>
+    </div>
+    <div style="position:relative;height:20px;margin:4px 0 0 96px;">
+      ${nowPct >= 0 && nowPct <= 100 ? `<div style="position:absolute;left:${nowPct}%;top:2px;width:6px;height:6px;background:#ef4444;border-radius:50%;transform:translateX(-50%);box-shadow:0 0 6px #ef444488;"></div><div style="position:absolute;left:${nowPct}%;top:12px;font-size:0.6rem;color:#ef444499;transform:translateX(-50%);font-weight:500;letter-spacing:0.5px;">NOW</div>` : ''}
+    </div>
+    ${overlapInfo}
+  `;
+}
+
+function getUrgencyColor(statusInfo, nextEvent) {
+  if (statusInfo.status === 'holiday') return '#8b5cf6';
+  if (statusInfo.status === 'open') {
+    const mins = nextEvent.ms / 60000;
+    if (mins <= 15) return '#ef4444';
+    if (mins <= 60) return '#f59e0b';
+    return '#22c55e';
+  }
+  if (nextEvent.event === 'opens' && nextEvent.ms / 60000 <= 60) return '#3b82f6';
+  return '#6b7280';
+}
+
+function renderTrafficStrip() {
+  const strip = document.getElementById('traffic-strip');
+  strip.innerHTML = exchanges.map(ex => {
+    const statusInfo = getStatus(ex);
+    const nextEvent = getNextEvent(ex);
+    const color = getUrgencyColor(statusInfo, nextEvent);
+    return `<div class="traffic-item">
+      <div class="traffic-dot" style="background:${color};color:${color}"></div>
+      <span class="traffic-name">${ex.short}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderNextUp() {
+  const container = document.getElementById('next-up');
+  const events = exchanges.map(ex => {
+    const statusInfo = getStatus(ex);
+    const nextEvent = getNextEvent(ex);
+    const color = getUrgencyColor(statusInfo, nextEvent);
+    return {
+      name: ex.short,
+      event: nextEvent.event,
+      ms: nextEvent.ms,
+      color
+    };
+  }).sort((a, b) => a.ms - b.ms);
+
+  const items = events.map(ev => {
+    const icon = ev.event === 'closes' ? '&#9660;' : '&#9650;';
+    const verb = ev.event === 'closes' ? 'closes' : 'opens';
+    return `<div class="next-up-item">
+      <span class="next-up-arrow" style="color:${ev.color}">${icon}</span>
+      <span class="next-up-event"><strong>${ev.name}</strong> ${verb} in</span>
+      <span class="next-up-time" style="color:${ev.color}">${formatCountdown(ev.ms)}</span>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="next-up-title">Next Up</div>
+    <div class="next-up-list">${items}</div>
+  `;
+}
+
+function render() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  const localTime = new Date().toLocaleString("en-US", {
+    timeZone: USER_TZ,
+    weekday: 'long', year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+  });
+  document.getElementById('clock').textContent = `Your time: ${localTime}`;
+  document.getElementById('tz-info').textContent = `Detected timezone: ${USER_TZ}`;
+
+  renderTrafficStrip();
+  renderNextUp();
+
+  exchanges.forEach(ex => {
+    const statusInfo = getStatus(ex);
+    const nextEvent = getNextEvent(ex);
+    const urgency = getUrgency(statusInfo, nextEvent);
+    const localTime = getExchangeDate(ex.timezone).toLocaleTimeString("en-US", {
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+    });
+
+    const card = document.createElement('div');
+    card.className = `card ${urgency.cardClass}`;
+
+    let countdownLabel = nextEvent.event === 'closes' ? 'Closes in' : 'Opens in';
+
+    let extraInfo = '';
+    if (statusInfo.holiday) {
+      extraInfo = `<div class="extra-info" style="color:#a78bfa">${statusInfo.holiday}</div>`;
+    } else if (statusInfo.reason) {
+      extraInfo = `<div class="extra-info" style="color:#666">${statusInfo.reason}</div>`;
+    }
+
+    card.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="exchange-name">${ex.name}</div>
+          <div class="exchange-country">${ex.country}</div>
+        </div>
+        <span class="status-badge ${urgency.badgeClass}">${urgency.badgeText}</span>
+      </div>
+      <div class="times">
+        <span>Open: ${formatTime(ex.open.h, ex.open.m)}</span>
+        <span>Close: ${formatTime(ex.close.h, ex.close.m)}</span>
+        <span>(Local)</span>
+      </div>
+      <div class="countdown-section">
+        <div class="countdown-label">${countdownLabel}</div>
+        <div class="countdown-timer ${urgency.timerClass}">${formatCountdown(nextEvent.ms)}</div>
+        ${extraInfo}
+      </div>
+      <div class="local-time">Exchange local time: ${localTime}</div>
+    `;
+
+    grid.appendChild(card);
+  });
+
+  renderOverlap();
+}
+
+render();
+setInterval(render, 1000);
+</script>
+</body>
+</html>
