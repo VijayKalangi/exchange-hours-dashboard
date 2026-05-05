@@ -904,25 +904,28 @@ function renderOverlap() {
   let maxOverlap = 0;
   slots.forEach(s => { if (s.count > maxOverlap) maxOverlap = s.count; });
 
-  // Find continuous ranges of max overlap
-  let ranges = [];
-  let rangeStart = null;
-  let rangeNames = null;
-  for (let i = 0; i < slots.length; i++) {
-    if (slots[i].count === maxOverlap) {
-      if (rangeStart === null) {
-        rangeStart = slots[i].t;
-        rangeNames = slots[i].names;
-      }
-    } else {
-      if (rangeStart !== null) {
-        ranges.push({ start: rangeStart, end: slots[i].t, names: rangeNames });
-        rangeStart = null;
+  // Find all overlap ranges (2+ exchanges) grouped by count
+  function findRangesForCount(targetCount) {
+    let ranges = [];
+    let rangeStart = null;
+    let rangeNames = null;
+    for (let i = 0; i < slots.length; i++) {
+      if (slots[i].count === targetCount) {
+        if (rangeStart === null) {
+          rangeStart = slots[i].t;
+          rangeNames = slots[i].names;
+        }
+      } else {
+        if (rangeStart !== null) {
+          ranges.push({ start: rangeStart, end: slots[i].t, names: rangeNames });
+          rangeStart = null;
+        }
       }
     }
-  }
-  if (rangeStart !== null) {
-    ranges.push({ start: rangeStart, end: slots[slots.length - 1].t + 15, names: rangeNames });
+    if (rangeStart !== null) {
+      ranges.push({ start: rangeStart, end: slots[slots.length - 1].t + 15, names: rangeNames });
+    }
+    return ranges;
   }
 
   function minsToTimeStr(m) {
@@ -932,14 +935,20 @@ function renderOverlap() {
   }
 
   let overlapInfo = '';
-  if (ranges.length > 0) {
+  if (maxOverlap >= 2) {
     overlapInfo = `<div class="overlap-highlight">
-      <h3>Maximum Overlap: ${maxOverlap} exchanges simultaneously</h3>
-      <p>`;
-    ranges.forEach(r => {
-      overlapInfo += `<span class="peak">${minsToTimeStr(r.start)} – ${minsToTimeStr(r.end)} (your local time)</span>: ${r.names.join(', ')}<br>`;
-    });
-    overlapInfo += `</p></div>`;
+      <h3>Overlap Windows (your local time)</h3>`;
+    for (let count = maxOverlap; count >= 2; count--) {
+      const ranges = findRangesForCount(count);
+      if (ranges.length > 0) {
+        overlapInfo += `<div style="margin-bottom:8px;"><strong style="color:${count === maxOverlap ? '#22c55e' : '#ccc'}">${count} exchanges:</strong><br>`;
+        ranges.forEach(r => {
+          overlapInfo += `<span style="margin-left:12px;color:#aaa;">${minsToTimeStr(r.start)} – ${minsToTimeStr(r.end)}</span> <span style="color:#666;font-size:0.8rem;">${r.names.join(', ')}</span><br>`;
+        });
+        overlapInfo += `</div>`;
+      }
+    }
+    overlapInfo += `</div>`;
   }
 
   // Build heat band — brightness-based (white intensity = more exchanges open)
@@ -949,11 +958,11 @@ function renderOverlap() {
     const normT = ((t % 1440) + 1440) % 1440;
     const slot = slots.find(s => s.t === normT);
     const count = slot ? slot.count : 0;
-    // 0 = dark, max = cyan/teal
+    // 0 = dark, max = warm gold
     const intensity = maxOverlap > 0 ? count / maxOverlap : 0;
-    const r = Math.round(34 * intensity);
-    const g = Math.round(211 * intensity);
-    const b = Math.round(238 * intensity);
+    const r = Math.round(253 * intensity);
+    const g = Math.round(230 * intensity);
+    const b = Math.round(138 * intensity);
     const color = count === 0 ? '#0d0f16' : `rgb(${r}, ${g}, ${b})`;
     heatHTML += `<div class="heat-segment" style="width:${slotWidth}%;background:${color}" title="${count} exchange${count !== 1 ? 's' : ''} open"></div>`;
   }
