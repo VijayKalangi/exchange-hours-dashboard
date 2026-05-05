@@ -935,10 +935,10 @@ function renderOverlap() {
   }
 
   let overlapInfo = '';
-  if (maxOverlap >= 2) {
+  if (maxOverlap >= 3) {
     overlapInfo = `<div class="overlap-highlight">
       <h3>Overlap Windows (your local time)</h3>`;
-    for (let count = maxOverlap; count >= 2; count--) {
+    for (let count = maxOverlap; count >= 3; count--) {
       const ranges = findRangesForCount(count);
       if (ranges.length > 0) {
         overlapInfo += `<div style="margin-bottom:8px;"><strong style="color:${count === maxOverlap ? '#22c55e' : '#ccc'}">${count} exchanges:</strong><br>`;
