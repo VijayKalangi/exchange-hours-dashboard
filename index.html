@@ -936,19 +936,29 @@ function renderOverlap() {
 
   let overlapInfo = '';
   if (maxOverlap >= 3) {
-    overlapInfo = `<div class="overlap-highlight">
-      <h3>Overlap Windows (your local time)</h3>`;
+    overlapInfo = `<div class="overlap-highlight" style="background:linear-gradient(135deg, #0f1118 0%, #1a1d2e 100%); border:1px solid #2a2d3e; padding:18px 20px;">
+      <h3 style="margin-bottom:14px; font-size:0.95rem; color:#fde68a; letter-spacing:0.3px;">Overlap Windows</h3>
+      <div style="display:flex; flex-direction:column; gap:12px;">`;
     for (let count = maxOverlap; count >= 3; count--) {
       const ranges = findRangesForCount(count);
       if (ranges.length > 0) {
-        overlapInfo += `<div style="margin-bottom:8px;"><strong style="color:${count === maxOverlap ? '#22c55e' : '#ccc'}">${count} exchanges:</strong><br>`;
+        const barWidth = Math.min(100, (count / maxOverlap) * 100);
+        const barColor = count === maxOverlap ? '#fde68a' : '#fde68a88';
+        overlapInfo += `<div style="padding:10px 14px; background:#0d0f16; border-radius:8px; border:1px solid #1f2233;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <div style="width:${barWidth}%; height:4px; background:${barColor}; border-radius:2px;"></div>
+            <span style="font-size:0.75rem; color:${count === maxOverlap ? '#fde68a' : '#999'}; font-weight:600; white-space:nowrap;">${count} exchanges</span>
+          </div>`;
         ranges.forEach(r => {
-          overlapInfo += `<span style="margin-left:12px;color:#aaa;">${minsToTimeStr(r.start)} – ${minsToTimeStr(r.end)}</span> <span style="color:#666;font-size:0.8rem;">${r.names.join(', ')}</span><br>`;
+          overlapInfo += `<div style="display:flex; align-items:center; gap:8px; padding:4px 0;">
+            <span style="font-size:0.85rem; font-weight:600; color:#e0e0e0; font-variant-numeric:tabular-nums;">${minsToTimeStr(r.start)} – ${minsToTimeStr(r.end)}</span>
+            <span style="font-size:0.75rem; color:#666; border-left:1px solid #2a2d3e; padding-left:8px;">${r.names.join(' · ')}</span>
+          </div>`;
         });
         overlapInfo += `</div>`;
       }
     }
-    overlapInfo += `</div>`;
+    overlapInfo += `</div></div>`;
   }
 
   // Build heat band — brightness-based (white intensity = more exchanges open)
